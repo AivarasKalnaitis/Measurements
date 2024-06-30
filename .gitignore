@@ -1,0 +1,43 @@
+# Ignore Visual Studio files
+.vs/
+*.suo
+*.user
+*.sln.docstates
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore NuGet packages
+*.nuget.props
+*.nuget.targets
+packages/
+
+# Ignore ReSharper files
+_ReSharper*/
+*.ReSharper.user
+
+# Ignore Rider files
+.idea/
+
+# Ignore build logs
+*.log
+
+# Ignore files with sensitive information
+appsettings.json
+secrets.json
+
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore Windows specific files
+Thumbs.db
+
+# Ignore node_modules folder for frontend projects
+node_modules/
+
+# Ignore package-lock.json file for Node.js projects
+package-lock.json
+
+# Ignore environment-specific files
+*.env
