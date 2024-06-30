@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Measurements
 {
@@ -33,10 +34,10 @@ namespace Measurements
         {
             foreach (var entry in sampledMeasurements)
             {
-                Console.WriteLine($"{entry.Key}:");
-                foreach (var measurement in entry.Value)
+                var sortedMeasurements = entry.Value.OrderBy(m => m.MeasurementTime);
+                foreach (var measurement in sortedMeasurements)
                 {
-                    Console.WriteLine($"  {measurement.MeasurementTime:yyyy-MM-ddTHH:mm:ss}, {measurement.MeasurementValue}");
+                    Console.WriteLine($"{{ {measurement.MeasurementTime:yyyy-MM-ddTHH:mm:ss}, {entry.Key}, {measurement.MeasurementValue} }}");
                 }
             }
         }

@@ -16,21 +16,16 @@ namespace Measurements
 
         public Dictionary<MeasurementType, List<Measurement>> Sample(DateTime startOfSampling, List<Measurement> unsampledMeasurements)
         {
-            var groupedByType = GroupByType(unsampledMeasurements);
+            var groupedByType = unsampledMeasurements.GroupBy(m => m.Type).ToDictionary(g => g.Key, g => g.ToList());
             var result = new Dictionary<MeasurementType, List<Measurement>>();
 
             foreach (var group in groupedByType)
             {
-                result[group.Key] = SampleMeasurements(startOfSampling, group.Value);
+                var sampledMeasurements = SampleMeasurements(startOfSampling, group.Value);
+                result[group.Key] = sampledMeasurements;
             }
 
             return result;
-        }
-
-        private Dictionary<MeasurementType, List<Measurement>> GroupByType(IEnumerable<Measurement> measurements)
-        {
-            return measurements.GroupBy(m => m.Type)
-                .ToDictionary(g => g.Key, g => g.ToList());
         }
 
         private List<Measurement> SampleMeasurements(DateTime startOfSampling, IEnumerable<Measurement> measurements)
@@ -43,16 +38,38 @@ namespace Measurements
 
             foreach (var measurement in sortedMeasurements)
             {
+                if (_intervalManager.IsInPreviousInterval(measurement.MeasurementTime, currentIntervalStart))
+                {
+                    currentIntervalStart = currentIntervalStart.AddMinutes(-IntervalManager.IntervalMinutes);
+                    lastMeasurement = measurement;
+                    _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement, currentIntervalStart);
+                    currentIntervalStart = _intervalManager.AdvanceToNextIntervalBoundary(currentIntervalStart, measurement.MeasurementTime);
+                    continue;
+                }
+
                 if (_intervalManager.IsInNextInterval(measurement.MeasurementTime, currentIntervalStart))
                 {
-                    _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement);
-                    currentIntervalStart = _intervalManager.AdvanceToNextInterval(currentIntervalStart, measurement.MeasurementTime);
+                    var timeDiff = measurement.MeasurementTime - currentIntervalStart;
+                    if (timeDiff.TotalMinutes == IntervalManager.IntervalMinutes)
+                    {
+                        lastMeasurement = measurement;
+                        _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement, currentIntervalStart);
+                        currentIntervalStart = _intervalManager.AdvanceToNextIntervalBoundary(currentIntervalStart, measurement.MeasurementTime);
+                        continue;
+                    }
+
+                    _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement, currentIntervalStart);
+                    currentIntervalStart = _intervalManager.AdvanceToNextIntervalBoundary(currentIntervalStart, measurement.MeasurementTime);
                 }
 
                 lastMeasurement = measurement;
             }
 
-            _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement);
+            if (lastMeasurement != null)
+            {
+                _intervalManager.AddLastMeasurementIfExists(sampledMeasurements, ref lastMeasurement, currentIntervalStart);
+            }
+
             return sampledMeasurements;
         }
     }
